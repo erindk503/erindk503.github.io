@@ -1,0 +1,485 @@
+Begins with Coding
+<IF (BeginsWith({{Order.Number}}, "5"))>
+Title Security Agency of Arizona, LLC, an Arizona corporation
+<ELSE>Title Security Agency, LLC, a Delaware limited liability company</IF>
+
+FOREACH ASK NUMBER
+<FOREACH ASK NUMBER {{.RequirementException[{{.Type}}="Exception" and {{.ShowOnDocument}}=True]}}>
+{{.Description}}
+</FOREACH>
+
+Part II
+
+<FOREACH ASK NUMBER RESUME {{.RequirementException[{{.Type}}="Exception" and {{.ShowOnDocument}}=True and 1=1]}}>
+{{.Description}}
+</FOREACH>
+
+
+Mail to After Recording Generic Coding:
+<IF ({{Order.Deed.MailDeedToGrantee}}=TRUE)>
+{{Order.BuyerAllNamesWithCommas}}
+{{Order.Deed.GranteeAddress1}}
+<IF (Not IsEmpty({{Order.Deed.GranteeAddress2}}))>
+{{Order.Deed.GranteeAddress2}}
+</IF>
+{{Order.Deed.GranteeCityStateZip}}
+<ELSE>
+{{Order.Acknowledgment.MailToAfterRecording.Name}}
+<IF ({{Order.Acknowledgment.MailToAfterRecording.ContactType}}="Buyer/Borrower" or {{Order.Acknowledgment.MailToAfterRecording.ContactType}}="Seller")>
+<IF (IsEmpty({{Order.Acknowledgment.MailToAfterRecording.ForwardingAddress1Address2}}))>
+{{Order.Acknowledgment.MailToAfterRecording.CurrentAddress1Address2}}
+{{Order.Acknowledgment.MailToAfterRecording.CurrentCityStateZip}}
+<ELSE>
+{{Order.Acknowledgment.MailToAfterRecording.ForwardingAddress1Address2}}
+{{Order.Acknowledgment.MailToAfterRecording.ForwardingCityStateZip}}
+</IF>
+<ELSE>
+<IF (Not IsEmpty({{Order.Acknowledgment.MailToAfterRecordingPerson.FullName}}))>
+Attn:  {{Order.Acknowledgment.MailToAfterRecordingPerson.FullName}}
+</IF>
+{{Order.Acknowledgment.MailToAfterRecording.Address1Address2}}
+{{Order.Acknowledgment.MailToAfterRecording.CityStateZip}}
+</IF>
+</IF>
+
+VAR coding examples:
+
+Counting multiples:
+
+<VAR $Counter (0)>
+<VAR $Total (0)>
+<FOREACH {{Order.Property}}><VAR $Total ({{$Total}} + <COUNT {{.Parcel}}>)></FOREACH><IF ({{$Total}}>0)><FOREACH {{Order.Property}}><FOREACH {{.Parcel}}><VAR $Counter ({{$Counter}} + 1)><IF ({{$Counter}}>1)><IF ({{$Counter}}<{{$Total}})>, <ELSE> and </IF></IF>{{.Identification}}</FOREACH></FOREACH><ELSE>{{Order.Property.Parcel.Identification}}</IF>
+
+Adding totals:
+<VAR $LoanAmts (0.00)>
+<FOREACH {{Order.Loan}}><VAR $LoanAmts ({{.LoanAmount}} + {{$LoanAmts}})>
+</FOREACH>
+${{$LoanAmts}}
+
+<VAR $EMD (0.00)>
+<FOREACH {{Order.EarnestMoney}}><VAR $EMD ({{.Amount}} + {{$EMD}})>
+</FOREACH>
+${{$EMD}}
+
+Trigger:
+
+<VAR $CorpBuyer (False)>
+<FOREACH {{Order.Buyer}}><IF ({{.IndivOrOrg}} = "Organization")><VAR $CorpBuyer (True)>
+</IF></FOREACH>
+<IF ({{$CorpBuyer}} = True)>
+Here is text that appears on my document if I have a buyer that is a corporation.
+<ELSE>
+Here is text that appears if I only have individual buyers.
+</IF>
+
+Referencing relative fieldcode within a filter:
+
+<VAR $POL ({{.Name}})>
+In compliance with your Payoff Statement dated {{.PayoffStatementDated_150087# LD}} (copy attached), we enclose our check payable to your order in the amount of {{Ledger.Transaction[{{.PayorPayee}} = {{$POL}}].Amount}} in full payment of all amounts due on the captioned loan, as set forth and itemized therein.
+
+Combo VAR trigger and InString Coding:
+
+<VAR $BuyerJT (False)>
+<FOREACH {{Order.Buyer}}><IF (InString({{.Vesting}},"joint")>0)><VAR $BuyerJT (True)>
+</IF></FOREACH>
+
+WARRANTY DEED
+<IF ({{$BuyerJT}} = True)>
+Joint Tenancy
+</IF>
+ 
+
+
+Substring coding:
+
+XXX-XX<CALC (SubString({{Order.Buyer.SSN1}}, 7, 5))>
+
+Calculations:
+
+<CALC (DateAdd({{Order.SettlementDate}}, 30, "d", true))>
+
+Acknowledgment examples:
+
+The below will count the people that are sellers, and then string with commas and ands. If a seller is an org, and doesn't have a person associated with it, user will get a prompt for person name and title.
+The foregoing instrument was acknowledged before me on this {{Order.SettlementDate LDR}} by <VAR $Counter (0)><VAR $Total (0)><FOREACH {{Order.Seller}}><IF ({{.IndivOrOrg}} = "Organization")><VAR $Total ({{$Total}} + 1)><ELSE><VAR $Total ({{$Total}} + <COUNT {{.Person}}>)></IF></FOREACH><FOREACH {{Order.Seller}}><IF ({{.IndivOrOrg}} = "Individual")><FOREACH {{.Person}}><VAR $Counter ({{$Counter}} + 1)><IF ({{$Counter}}>1)><IF ({{$Counter}}<{{$Total}})>, <ELSE> and </IF></IF>{{.FullName}}</FOREACH><ELSE><VAR $Counter ({{$Counter}} + 1)><IF ({{$Counter}}>1)><IF ({{$Counter}}<{{$Total}})>, <ELSE> and </IF></IF>{{.OfficerName_514357#}} as {{.OfficerTitle_514357#}} of {{.Name}}</IF></FOREACH>.
+
+The below will do a FEA over people that are associated with Seller's that are Corporations.
+On the <CALC LDR (SystemDate())>, personally appeared before me <VAR $Counter (0)><VAR $Total (0)><FOREACH ASK {{Order.Seller[{{.Type}} = "Corporation"].Person}}><VAR $Total ({{$Total}} + 1)></FOREACH><FOREACH ASK {{Order.Seller[{{.Type}} = "Corporation"].Person}}><VAR $Counter ({{$Counter}} + 1)><IF ({{$Counter}}>1)><IF ({{$Counter}}<{{$Total}})>, <ELSE> and </IF></IF>{{.FullName}}</FOREACH>, who being by me duly sworn, did say that he/she, the said <VAR $Counter (0)><VAR $Total (0)><FOREACH ASK {{Order.Seller[{{.Type}} = "Corporation"].Person}}><VAR $Total ({{$Total}} + 1)></FOREACH><FOREACH ASK {{Order.Seller[{{.Type}} = "Corporation"].Person}}><VAR $Counter ({{$Counter}} + 1)><IF ({{$Counter}}>1)><IF ({{$Counter}}<{{$Total}})>, <ELSE> and </IF></IF>{{.FullName}} is the {{.Title}} of {{.OrderContact.Name}}</FOREACH>, and that the within and foregoing instrument was signed in behalf of said corporation by authority of a resolution of its board of directors, and said <VAR $Counter (0)><VAR $Total (0)><FOREACH ASK {{Order.Seller[{{.Type}} = "Corporation"].Person}}><VAR $Total ({{$Total}} + 1)></FOREACH><FOREACH ASK {{Order.Seller[{{.Type}} = "Corporation"].Person}}><VAR $Counter ({{$Counter}} + 1)><IF ({{$Counter}}>1)><IF ({{$Counter}}<{{$Total}})>, <ELSE> and </IF></IF>{{.FullName}}</FOREACH> duly acknowledged to me that said corporation executed the same and that the seal affixed is the seal of the said corporation.
+
+The below will do a FEA over people that are associated with Seller's that are Limited Liability Companies.
+On the <CALC LDR (SystemDate())>, personally appeared before me <VAR $Counter (0)><VAR $Total (0)><FOREACH ASK {{Order.Seller[{{.Type}} = "Limited Liability Company"].Person}}><VAR $Total ({{$Total}} + 1)></FOREACH><FOREACH ASK {{Order.Seller[{{.Type}} = "Limited Liability Company"].Person}}><VAR $Counter ({{$Counter}} + 1)><IF ({{$Counter}}>1)><IF ({{$Counter}}<{{$Total}})>, <ELSE> and </IF></IF>{{.FullName}}, who being duly sworn did say that he/she is the {{.Title}} of {{.OrderContact.Name}}</FOREACH>, and that said instrument was signed in behalf of said limited liability company by authority and said <VAR $Counter (0)><VAR $Total (0)><FOREACH ASK {{Order.Seller[{{.Type}} = "Limited Liability Company"].Person}}><VAR $Total ({{$Total}} + 1)></FOREACH><FOREACH ASK {{Order.Seller[{{.Type}} = "Limited Liability Company"].Person}}><VAR $Counter ({{$Counter}} + 1)><IF ({{$Counter}}>1)><IF ({{$Counter}}<{{$Total}})>, <ELSE> and </IF></IF>{{.FullName}} acknowledged to me that he/she, as such {{.Title}}</FOREACH>, executed the same in the name of the limited liability company.
+
+To String people that are part of individual buyer contacts:
+<VAR $Counter (0)><VAR $Total (0)><FOREACH {{Order.Buyer[{{.IndivOrOrg}} = "Individual"].Person}})><VAR $Total ({{$Total}} + 1)></FOREACH><FOREACH {{Order.Buyer[{{.IndivOrOrg}} = "Individual"].Person}})><VAR $Counter ({{$Counter}} + 1)><IF ({{$Counter}}>1)><IF ({{$Counter}}<{{$Total}})>, <ELSE> and </IF></IF>{{.FullName}}</FOREACH>
+
+To match HUD amount to payoff lender with the lender payee name relative to the PC of the document
+<VAR $POL ({{.PayeeName}})>
+In compliance with your Payoff Statement dated {{.PayoffStatementDated_150087# LD}} (copy attached), we wire transferred funds on {{Order.DisbursementDate LD}} payable to your order in the amount of <IF ({{Order.TransactionType}}="Refinance")>${{Order.HUD.HUDLine[{{.HUDTo.Name}} = {{$POL}}].BuyerAmount}}<ELSE>${{Order.HUD.HUDLine[{{.HUDTo.Name}} = {{$POL}}].SellerAmount}}</IF> which represents payment in full per your written demand on the captioned loan, as set forth and itemized therein.  This loan is secured by a DEED OF TRUST, dated This loan is secured by a DEED OF TRUST, dated {{.DOTDated_150087# LD}}, recorded {{.DOTRecorded_150087# LD}}, Document No. {{.DocumentNo_150087#}} and/or Docket {{.Docket_150087#}} at Page {{.Page_150087#}}, records of {{Order.Property[1].County}} County, {{Order.Property[1].State LSTATE}}.
+
+To match transaction amount from register to payoff lender with the lender payee name relative to the PC of the document
+<VAR $POL ({{.PayeeName}})>
+Enclosed please find our check in the amount of ${{Ledger.Transaction[{{.PayorPayee}} = {{$POL}}].Amount}}, (interest calculated to {{.InterestToDate_800101# LD}}), representing payment in full of the above referenced loan.
+
+To string all buyer's phone numbers. Only indiv name 1 phone if indivororg is indiv:
+{{Order.BuyerAllNamesWithAnds}} (herein called Borrower) whose address is {{Order.Buyer[1].CurrentAddress1Address2}}, {{Order.Buyer[1].CurrentCityStateZip}} Phone:  <VAR $C (0)><VAR $T (<COUNT {{Order.Buyer}}>)><FOREACH {{Order.Buyer}}><VAR $C ({{$C}} + 1)><IF ({{$C}}>1)><IF ({{$C}}<{{$T}})>, <ELSE> and </IF></IF><IF ({{.IndivOrOrg}}="Individual")>{{.IndivName1CurrentHome}}<ELSE>{{.CurrentPhone}}</IF></FOREACH>
+
+To add all premiums and add charges for endorsements:
+<VAR $OP (0)><FOREACH {{.Title.OwnersPolicy}}><VAR $OP ({{$OP}} + {{.FinalPremium}})></FOREACH>
+<VAR $LP (0)><FOREACH {{.Title.LoanPolicy}}><VAR $LP ({{$LP}} + {{.FinalPremium}})></FOREACH>
+<VAR $END (0)><FOREACH {{.Title.Endorsement}}><VAR $END ({{$END}} + {{.Charge}})></FOREACH>
+ESCROW FEE:	${{.Title.Commitment[1].TotalEscrowFee_150087#}}
+	
+OWNERS POLICY FEE:	${{$OP}}
+	
+LENDERS POLICY FEE:	${{$LP}}
+	
+ENDORSEMENT FEE:	${{$END}}
+	
+
+To allow a FEA over contacts and put the information side-by-side. This also takes into account contact types and other customer specific requests:
+<VAR $Count (0)>
+<VAR $To1 ("")><VAR $At1 ("")><VAR $Fax1 ("")>
+<VAR $To2 ("")><VAR $At2 ("")><VAR $Fax2 ("")>
+<VAR $To3 ("")><VAR $At3 ("")><VAR $Fax3 ("")>
+<VAR $To4 ("")><VAR $At4 ("")><VAR $Fax4 ("")>
+<FOREACH ASK {{.Contact}}><VAR $Count ({{$Count}} + 1)>
+<IF ({{$To1}}="")><IF (Not IsEmpty({{.Name}}))><IF ({{.IndivOrOrg}}="Individual")><VAR $To1 ({{.Name}})><VAR $Fax1 ({{.CurrentFax}})><ELSE><VAR $To1 ({{.Person.FullName}})><VAR $At1 ({{.Name}})><VAR $Fax1 ({{.Person.Fax}})></IF><ELSE><VAR $To1 ({{Order.PersonSendingFaxTo_150087#}})><VAR $At1 ({{$Order.CompanyName_150087#}})><VAR $Fax1 ({{Order.FaxNo_150087#}})></IF><ELSE>
+<IF ({{$To2}}="")><IF (Not IsEmpty({{.Name}}))><IF ({{.IndivOrOrg}}="Individual")><VAR $To2 ({{.Name}})><VAR $Fax2 ({{.CurrentFax}})><ELSE><VAR $To2 ({{.Person.FullName}})><VAR $At2 ({{.Name}})><VAR $Fax2 ({{.Person.Fax}})></IF><ELSE><VAR $To2 ({{Order.PersonSendingFaxTo_150087#}})><VAR $At2 ({{$Order.CompanyName_150087#}})><VAR $Fax2 ({{Order.FaxNo_150087#}})></IF><ELSE>
+<IF ({{$To3}}="")><IF (Not IsEmpty({{.Name}}))><IF ({{.IndivOrOrg}}="Individual")><VAR $To3 ({{.Name}})><VAR $Fax3 ({{.CurrentFax}})><ELSE><VAR $To3 ({{.Person.FullName}})><VAR $At3 ({{.Name}})><VAR $Fax3 ({{.Person.Fax}})></IF><ELSE><VAR $To3 ({{Order.PersonSendingFaxTo_150087#}})><VAR $At3 ({{$Order.CompanyName_150087#}})><VAR $Fax3 ({{Order.FaxNo_150087#}})></IF><ELSE>
+<IF ({{$To4}}="")><IF (Not IsEmpty({{.Name}}))><IF ({{.IndivOrOrg}}="Individual")><VAR $To4 ({{.Name}})><VAR $Fax4 ({{.CurrentFax}})><ELSE><VAR $To4 ({{.Person.FullName}})><VAR $At4 ({{.Name}})><VAR $Fax4 ({{.Person.Fax}})></IF><ELSE><VAR $To4 ({{Order.PersonSendingFaxTo_150087#}})><VAR $At4 ({{$Order.CompanyName_150087#}})><VAR $Fax4 ({{Order.FaxNo_150087#}})></IF>
+</IF></IF></IF></IF></FOREACH>
+<IF ({{$Count}}>1)>
+TO:	{{$To1}}		TO:	{{$To2}}
+				
+<IF ({{$At1}}<>"")>AT:<ELSE>FAX NO.:</IF>	<IF ({{$At1}}<>"")>{{$At1}}<ELSE>{{$Fax1}}</IF>		<IF ({{$At2}}<>"")>AT:<ELSE>FAX NO.:</IF>	<IF ({{$At2}}<>"")>{{$At2}}<ELSE>{{$Fax2}}</IF>
+				
+<IF ({{$At1}}<>"" and {{$At2}}<>"")>
+FAX NO.	{{$Fax1}}		FAX NO.:	{{$Fax2}}
+				
+<ELSE><IF ({{$At1}}<>"")>
+FAX NO.	{{$Fax1}}			
+				
+<ELSE>
+			FAX NO.:	{{$Fax2}}
+				
+</IF></IF><ELSE>
+TO:	{{$To1}}			
+				
+<IF ({{$At1}}<>"")>AT:<ELSE>FAX NO.:</IF>	<IF ({{$At1}}<>"")>{{$At1}}<ELSE>{{$Fax1}}</IF>			
+				
+<IF ({{$At1}}<>"")>
+FAX NO.	{{$Fax1}}			
+				
+</IF></IF><IF ({{$Count}}>3)>
+TO:	{{$To3}}		TO:	{{$To4}}
+				
+<IF ({{$At3}}<>"")>AT:<ELSE>FAX NO.:</IF>	<IF ({{$At3}}<>"")>{{$At3}}<ELSE>{{$Fax3}}</IF>		<IF ({{$At4}}<>"")>AT:<ELSE>FAX NO.:</IF>	<IF ({{$At4}}<>"")>{{$At4}}<ELSE>{{$Fax4}}</IF>
+				
+<IF ({{$At3}}<>"" and {{$At4}}<>"")>
+FAX NO.	{{$Fax3}}		FAX NO.:	{{$Fax4}}
+				
+<ELSE><IF ({{$At3}}<>"")>
+FAX NO.	{{$Fax3}}			
+				
+<ELSE>
+			FAX NO.:	{{$Fax4}}
+				
+</IF></IF><ELSE><IF ({{$Count}}=3)>
+TO:	{{$To3}}			
+				
+<IF ({{$At3}}<>"")>AT:<ELSE>FAX NO.:</IF>	<IF ({{$At3}}<>"")>{{$At3}}<ELSE>{{$Fax3}}</IF>			
+				
+<IF ({{$At3}}<>"")>
+FAX NO.	{{$Fax3}}			
+				
+</IF></IF></IF>
+
+This coding is for when the customer needs a dash (-) in their trust account number in order for it to print on the check. For this to happen, the trust account fieldcode must contain a "D" in the place that the dash would need to appear. In order the remove the D from the actual FC when it appears on the document, we used logic to include all numbers BUT the D. This is dependent on know which character place the D appears in. In addition, it will show the entire fieldcode if the D is not present:
+
+ACCOUNT NO.:	<IF (InString({{Ledger.TrustAccount.Account}},"D")>0)><CALC (SubString({{Ledger.TrustAccount.Account}}, 1, 5))><CALC (SubString({{Ledger.TrustAccount.Account}}, 7, 11))><ELSE>{{Ledger.TrustAccount.Account}}
+</IF>
+
+Format for shadow boxes from Standard/Enterprise docs:
+		
+	
+UAMC ESCROW IMPOUND SUMMARY
+	
+		
+
+To string parcels within a FE property, or with document with PC of property.
+<IF (<COUNT {{.Parcel}}> > 0)><VAR $Counter (0)><VAR $Total (<COUNT {{.Parcel}}>)><FOREACH {{.Parcel}}><VAR $Counter ({{$Counter}} +1)><IF ({{$Counter}}>1)><IF ({{$Counter}}<{{$Total}})>, <ELSE> and </IF></IF>{{.Identification}}</FOREACH><ELSE>{{.Parcel.Identification}}</IF>
+
+Basic commission coding:
+
+	<IF ({{.HUD.Hudline[700].Percent}}>0)>{{.HUD.Hudline[700].Percent PERCENT DEC3}}<ELSE>_______________%</IF> OF $<IF ({{.SalesContract.SalesPrice}}>0)>{{.SalesContract.SalesPrice}}<ELSE>_________________________</IF> = $<IF ({{.HUD.Hudline[700].Amount}}>0)>{{.HUD.Hudline[700].Amount}}<ELSE>_________________________</IF> PAYABLE AS FOLLOWS:
+			
+	<IF ({{.HUD.Hudline[701].CommissionPercent}}>0)>{{.HUD.Hudline[701].CommissionPercent PERCENT DEC3}}<ELSE>_______________%</IF> TO <IF ({{.HUD.Hudline[701].Hudto.Name}}<>"")>{{.HUD.Hudline[701].Hudto.Name}}<ELSE>________________________________________</IF>
+			
+	<IF ({{.HUD.Hudline[702].CommissionPercent}}>0)>{{.HUD.Hudline[702].CommissionPercent PERCENT DEC3}}<ELSE>_______________%</IF> TO <IF ({{.HUD.Hudline[702].Hudto.Name}}<>"")>{{.HUD.Hudline[702].Hudto.Name}}<ELSE>________________________________________</IF>
+
+Instring coding for office name:
+<IF (InString({{Order.Title.Office.Name}},"Premium Title")>0)>
+Pull in Premium title logo
+<ELSE>
+Pull in Excellent Title logo
+</IF>
+
+The below will allow for 3 FEAs and won't repeat the one(s) chosen already. This only works if the user only selects one per FEA.
+
+<FOREACH ASK {{Order.HOA}}><VAR $HOAId ({{.ID}})>{{.Name}}</FOREACH><ELSE>{{Order.HOA.Name}}
+</IF>
+<FOREACH ASK {{Order.HOA[{{.ID}} <>{{$HOAID}}]}}><VAR $HOAId2 ({{.ID}})>{{.Name}}</FOREACH></IF>
+<FOREACH ASK {{Order.HOA[{{.ID}} <> {{$HOAId2}} and {{.ID}} <> {{$HOAID}}]}}>{{.Name}}</FOREACH></IF>
+
+To string all parcels for all properties with commas and and:
+<VAR $Counter (0)>
+<VAR $Total (0)>
+<FOREACH {{Order.Property}}><VAR $Total ({{$Total}} + <COUNT {{.Parcel}}>)></FOREACH><FOREACH {{Order.Property}}><FOREACH {{.Parcel}}><VAR $Counter ({{$Counter}} + 1)><IF ({{$Counter}}>1)><IF ({{$Counter}}<{{$Total}})>, <ELSE> and </IF></IF>{{.Identification}}</FOREACH></FOREACH>
+
+To string all people associated with a contact.
+<VAR $Counter (0)>
+<VAR $Total (<COUNT {{.Person}}>)>
+<FOREACH {{.Person}}><VAR $Counter ({{$Counter}} + 1)><IF ({{$Counter}}>1)><IF ({{$Counter}}<{{$Total}})>, <ELSE> and </IF></IF>{{.FullName}}</FOREACH>
+
+To calculate term of loan in years from payments per year and number of total payments.
+<VAR $PaymentsPerYear (<IF ({{Order.Loan.PaymentsPerYear}}=”52”)>52<ELSE><IF ({{Order.Loan.PaymentsPerYear}}=”26”)>26<ELSE><IF ({{Order.Loan.PaymentsPerYear}}=”24”)>24<ELSE><IF ({{Order.Loan.PaymentsPerYear}}=”12”)>12<ELSE><IF ({{Order.Loan.PaymentsPerYear}}=”6”)>6<ELSE><IF ({{Order.Loan.PaymentsPerYear}}=”4”)>4<ELSE><IF ({{Order.Loan.PaymentsPerYear}}=”2”)>2<ELSE><IF ({{Order.Loan.PaymentsPerYear}}=”1”)>1</IF></IF></IF></IF></IF></IF></IF></IF>)><CALC (NumericWords({{Order.Loan.NumberOfPayments}} / {{$PaymentsPerYear}}))>(<CALC ({{Order.Loan.NumberOfPayments}} / {{$PaymentsPerYear}})>)
+
+To string all Seller SSNs or Tax IDs with commas and and
+<VAR $Counter (0)><VAR $Total (0)><FOREACH {{Order.Seller}}><IF ({{.IndivOrOrg}} = "Individual")><IF (Not IsEmpty({{.IndivName2}}))><VAR $Total ({{$Total}} + 2)><ELSE><VAR $Total ({{$Total}} + 1)></IF><ELSE><VAR $Total ({{$Total}} + 1)></IF></FOREACH><FOREACH {{Order.Seller}}><IF ({{.IndivOrOrg}} = "Individual")><FOREACH {{.Person}}><VAR $Counter ({{$Counter}} +1)><IF ({{$Counter}}>1)><IF ({{$Counter}}<{{$Total}})>, <ELSE> and </IF></IF>{{.SSN}}</FOREACH><ELSE><VAR $Counter ({{$Counter}} +1)><IF ({{$Counter}}>1)><IF ({{$Counter}}<{{$Total}})>, <ELSE> and </IF></IF>{{.TaxID}}</IF></FOREACH>
+
+To filter HUD lines based on Line number
+<IF ({{Order.TransactionType}}="Refinance")>${{Order.HUD.HUDLine[({{.LineNumber}}>99 and {{.LineNumber}}<200) or ({{.LineNumber}}>1099 and {{.LineNumber}}<1200) and {{.HUDTo.Name}} = {{$POL}}].BuyerAmount}}<ELSE>${{Order.HUD.HUDLine[({{.LineNumber}}>499 and {{.LineNumber}}<600) or ({{.LineNumber}}>1099 and {{.LineNumber}}<1200) and {{.HUDTo.Name}} = {{$POL}}].SellerAmount}}</IF>
+
+To code for seller amount on additional charges in the 1300 section of the HUD.
+<FOREACH {{Order.HUD.HUDLine[({{.LineNumber}}>1304 and {{.LineNumber}}<1400)]}}><VAR $HudLine ({{.LineNumber}})><FOREACH {{.AdditionalCharge}}><VAR $Description ({{.Description}})><VAR $HudTo ({{.HudToName}})><FOREACH {{.Payor[{{.Payor.Code}} = "SA" or {{.Payor.Code}} = "S" or {{.Payor.Code}} = "S2" or {{.Payor.Code}} = "S3" or {{.Payor.Code}} = "S4" or {{.Payor.Code}} = "S5"]}}><IF ({{.Amount}} > 0.00)>
+	{{$Description}} to {{$HudTo}}	${{.Amount}}	<IF ({{.IsPOC}} = True)>POC</IF>
+</IF></FOREACH></FOREACH></FOREACH>
+
+Using begins with:
+
+<IF (BeginsWith({{Order.Number}}, 20))>
+True
+<ELSE>
+False
+</IF>
+
+In string coding coding in a filter
+{{.RequestedTask[InString({{.Task}}, "HOA/Condo Closing Letter")>0].Contact.Name}}
+
+String property addresses using FEA for the Total
+<IF (<COUNT {{Order.Property}}> > 1)><VAR $Counter (0)><VAR $Total (0)><FOREACH ASK {{Order.Property}}><VAR $Total ({{$Total}} + 1)></FOREACH><FOREACH ASK {{Order.Property}}><VAR $Counter ({{$Counter}} +1)><IF ({{$Counter}}>1)><IF ({{$Counter}}<{{$Total}})>, <ELSE> and </IF></IF>{{.Address1Address2}}, {{.CityStateZip}}</FOREACH><ELSE>{{Order.Property.Address1Address2}}, {{Order.Property.CityStateZip}}</IF>
+
+String property addresses without FEA:
+<VAR $Counter (0)><VAR $Total (0)><FOREACH {{Order.Property}}><VAR $Total ({{$Total}} + 1)></FOREACH><FOREACH {{Order.Property}}><VAR $Counter ({{$Counter}} +1)><IF ({{$Counter}}>1)><IF ({{$Counter}}<{{$Total}})>, <ELSE> and </IF></IF>{{.Address1Address2}}, {{.CityStateZip}}</FOREACH>
+
+String multiple contacts in an order:
+
+{{Order.Escrow.Office.Name}}<VAR $C (1)><VAR $T (1)><VAR $T ({{$T}} + <COUNT {{Order.Underwriter}}> + <COUNT {{Order.Lender}}> + <COUNT {{Order.ListingAgentBroker}}> + <COUNT {{Order.SellingAgentBroker}}>)><FOREACH {{Order.Underwriter}}><VAR $C ({{$C}}+ 1)><IF ({{$C}}>1)><IF ({{$C}}<{{$T}})>, <ELSE> and </IF></IF>{{.Name}}</FOREACH><FOREACH {{Order.Lender}}><VAR $C ({{$C}}+ 1)><IF ({{$C}}>1)><IF ({{$C}}<{{$T}})>, <ELSE> and </IF></IF>{{.Name}}</FOREACH><FOREACH {{Order.ListingAgentBroker}}><VAR $C ({{$C}}+ 1)><IF ({{$C}}>1)><IF ({{$C}}<{{$T}})>, <ELSE> and </IF></IF>{{.Name}}</FOREACH><FOREACH {{Order.SellingAgentBroker}}><VAR $C ({{$C}}+ 1)><IF ({{$C}}>1)><IF ({{$C}}<{{$T}})>, <ELSE> and </IF></IF>{{.Name}}</FOREACH>
+To calc the day before the settlement date. ie:  12/8/13 would be 7th.
+<CALC WORDSO ({{Order.SettlementDate DD}} - 1)>
+
+
+<VAR $1Name ("")><VAR $1Add ("")><VAR $1CSZ (")><VAR $1Phone (")><VAR $1Sig ("")>
+<VAR $2Name ("")><VAR $2Add1 ("")><VAR $2Add2 ("")><VAR $2CSZ (")><VAR $2Phone (")><VAR $2Sig ("")>
+<FOREACH ASK {{Order.Contact}}>
+<IF ({{$1Name}}="")><VAR $1Name ({{.Name}})><VAR $1Add ({{.Address1Address2}})><VAR $1CSZ ({{.CityStateZip}})><IF ({{.ContactType}} = "Buyer/Borrower" or {{.ContactType}} = "Seller")><IF ({{.IndivOrOrg}} = "Individual")><VAR $1Phone ({{.IndivName1CurrentHome}})><ELSE><VAR $1Phone ({{.CurrentPhone}})></IF><ELSE><VAR $1Phone ({{.Phone}})></IF><VAR $1Sig ({{.ID}})>
+<ELSE>
+<VAR $2Name ("")><VAR $2Name ({{.Name}})><VAR $2Add ({{.Address1Address2}})><VAR $2CSZ ({{.CityStateZip}})><IF ({{.ContactType}} = "Buyer/Borrower" or {{.ContactType}} = "Seller")><IF ({{.IndivOrOrg}} = "Individual")><VAR $2Phone ({{.IndivName1CurrentHome}})><ELSE><VAR $2Phone ({{.CurrentPhone}})></IF><ELSE><VAR $2Phone ({{.Phone}})></IF><VAR $2Sig ({{.ID}})>
+</IF>
+</FOREACH>
+{{$1Name}}
+{{$1Add}}
+{{$1CSZ}}
+{{$1Phone}}
+
+<IF ({{Order.Contact[{{.ID}} = {{$1Sig}}].IndivOrOrg}} = "Individual")>
+<FOREACH {{Order.Contact[{{.ID}} = {{$1Sig}}].Person}}>
+
+			
+{{.FullName}}		Date
+
+</FOREACH>
+<ELSE>
+{{Order.Contact[{{.ID}} = {{$1Sig}}].Name}}
+
+<IF (<COUNT {{Order.Contact[{{.ID}} = {{$1Sig}}].Person}}>>0)>
+<FOREACH {{Order.Contact[{{.ID}} = {{$1Sig}}].Person}}>
+
+			
+{{.FullName}}		Date
+
+</FOREACH>
+<ELSE>
+
+			
+		Date
+</IF>
+</IF>	{{$2Name}}
+{{$2Add}}
+{{$2CSZ}}
+{{$2Phone}}
+
+<IF ({{Order.Contact[{{.ID}} = {{$2Sig}}].IndivOrOrg}} = "Individual")>
+<FOREACH {{Order.Contact[{{.ID}} = {{$2Sig}}].Person}}>
+
+			
+{{.FullName}}		Date
+
+</FOREACH>
+<ELSE>
+{{Order.Contact[{{.ID}} = {{$2Sig}}].Name}}
+
+<IF (<COUNT {{Order.Contact[{{.ID}} = {{$2Sig}}].Person}}>>0)>
+<FOREACH {{Order.Contact[{{.ID}} = {{$2Sig}}].Person}}>
+
+			
+{{.FullName}}		Date
+
+</FOREACH>
+<ELSE>
+
+			
+		Date
+</IF>
+</IF>
+
+<VAR $Buyer ({{.Name}})>
+${{Order.HUD1Amount[{{.Contact.Name}}={{$Buyer}} or {{.Contact.Code}}="BA"].Amount}}
+
+CODING TO HAVE A LINE BREAK (HARD RETURN) IN THE MIDDLE OF A VARIABLE
+
+
++ CRFL() +
+
+Ex:
+<VAR $FooterTitle1 ("TIRBOP - PA ENDORSEMENT 910 (Environmental Protection Lien) (04/01/07)")>
+<VAR $FooterTitle2 ("COMMERCIAL LOAN POLICY ONLY" + CRLF() + "PROHIBITED FOR POLICIES COVERING 1-4 FAMILY RESIDENTIAL PROPERTY")>
+<VAR $RevDate ("")>
+
+String property Address (ALL) with commas & and
+
+<VAR $Counter (0)>
+<VAR $Total (<COUNT {{Order.Property}}>)>
+<FOREACH {{Order.Property}}><VAR $Counter ({{$Counter}} + 1)><IF ({{$Counter}}>1)><IF ({{$Counter}}<{{$Total}})>, <ELSE> and </IF></IF><IF (IsEmpty({{.Address1}}))><IF ({{.Type}}="Vacant Land")>Vacant Land of </IF><VAR $ParcelCounter (0)><VAR $Parcel (<COUNT {{.Parcel}}>)><VAR $TaxMap (<COUNT {{.TaxMap}}>)><IF ({{$Parcel}}>0)>APN/Parcel ID(s) <FOREACH {{.Parcel}}><VAR $ParcelCounter ({{$ParcelCounter}} + 1)><IF ({{$ParcelCounter}}>1)><IF ({{$ParcelCounter}}<{{$Parcel}})>, <ELSE> and </IF></IF>{{.Identification}}</FOREACH></IF><IF ({{$TaxMap}}>0)><IF ({{$Parcel}}>0)> as well as </IF>Tax/Map ID(s) <VAR $TaxMapCounter (0)><FOREACH {{.TaxMap}}><VAR $TaxMapCounter ({{$TaxMapCounter}} + 1)><IF ({{$TaxMapCounter}}>1)><IF ({{$TaxMapCounter}}<{{$TaxMap}})>, <ELSE> and </IF></IF>{{.Identification}}</FOREACH></IF><ELSE>{{.Address1Address2}}, {{.CityStateZip}}<IF ({{.VillageBoroughTitle}}<>"")>, {{.VillageBoroughTitle}} of {{.VillageBorough}}</IF></IF></FOREACH>
+Coding For Acknowledgment State and County
+
+<IF ({{Order.Notary.State}}="")>State of 	
+<ELSE>State of {{Order.Notary.State LSTATE}}
+</IF>
+<IF ({{Order.Notary.CivilDivisionTitle}}="")>_________________________<ELSE>{{Order.Notary.CivilDivisionTitle}}</IF> of {{Order.Notary.CivilDivision LINE25}}
+
+
+Coding for Individual Signature Lines with Seals
+
+<FOREACH {{Order.Seller}}>
+<IF ({{.IndivOrOrg}} = "Individual")>
+<FOREACH {{.Person}}>
+
+		{{.SignatureLine}}	(SEAL)
+</FOREACH>
+<ELSE>
+
+{{.Name}}
+
+<IF (<COUNT {{.Person}}>>0)>
+<FOREACH {{.Person}}>
+
+		{{.SignatureLine}}	(SEAL)
+</FOREACH>
+<ELSE>
+
+			
+{{.Person.FullName}}	(SEAL)
+</IF>
+</IF>
+</FOREACH>
+
+<FOREACH {{Order.Buyer}}>
+<IF ({{.IndivOrOrg}} = "Individual")>
+<FOREACH {{.Person}}>
+
+		{{.SignatureLine}}	(SEAL)
+</FOREACH>
+<ELSE>
+
+{{.Name}}
+
+<IF (<COUNT {{.Person}}>>0)>
+<FOREACH {{.Person}}>
+
+		{{.SignatureLine}}	(SEAL)
+</FOREACH>
+<ELSE>
+
+			
+{{.Person.FullName}}	(SEAL)
+</IF>
+</IF>
+</FOREACH>
+</TOGETHER>
+
+---------
+<FOREACH {{Order.Seller}}>
+<IF ({{.IndivOrOrg}} = "Individual")>
+<FOREACH {{.Person}}>
+<TOGETHER>
+
+	{{.SignatureLine}}
+
+STATE OF <IF (Not IsEmpty({{Order.Acknowledgment.State}}))>{{Order.Acknowledgment.State LSTATE UC}}<ELSE>{{Order.Acknowledgment.State LINE20}}</IF>
+
+COUNTY OF {{Order.Acknowledgment.CivilDivision UC LINE20}} 
+
+In {{Order.Escrow.Office.City}} on the {{Order.SettlementDate LDR}}, before me personally appeared {{.FullName}}, to me known and known by me to be the party executing the forgoing instrument and acknowledging said instrument by him to be his free act and deed.
+
+	
+{{Order.Notary.Name}}
+Notary Public Number:  {{Order.Notary.CommissionNumber}}
+My Commission Expires:  {{Order.Notary.CommissionExpiresDate LD}}
+</TOGETHER>
+</FOREACH>
+<ELSE>
+
+{{.Name}}
+
+<IF (<COUNT {{.Person}}>>0)>
+<FOREACH {{.Person}}>
+<TOGETHER>
+
+	{{.SignatureLine}}
+
+STATE OF <IF (Not IsEmpty({{Order.Acknowledgment.State}}))>{{Order.Acknowledgment.State LSTATE UC}}<ELSE>{{Order.Acknowledgment.State LINE20}}</IF>
+
+COUNTY OF {{Order.Acknowledgment.CivilDivision UC LINE20}} 
+
+In {{Order.Escrow.Office.City}} on the {{Order.SettlementDate LDR}}, before me personally appeared {{.FullName}}, to me known and known by me to be the party executing the forgoing instrument and acknowledging said instrument by him to be his free act and deed.
+
+	
+{{Order.Notary.Name}}
+Notary Public Number:  {{Order.Notary.CommissionNumber}}
+My Commission Expires:  {{Order.Notary.CommissionExpiresDate LD}}
+
+</TOGETHER>
+</FOREACH>
+<ELSE>
+<TOGETHER>
+
+		
+{{.Person.FullName}}
+
+STATE OF <IF (Not IsEmpty({{Order.Acknowledgment.State}}))>{{Order.Acknowledgment.State LSTATE UC}}<ELSE>{{Order.Acknowledgment.State LINE20}}</IF>
+
+COUNTY OF {{Order.Acknowledgment.CivilDivision UC LINE20}} 
+
+In {{Order.Escrow.Office.City}} on the {{Order.SettlementDate LDR}}, before me personally appeared {{.Person.FullName}}, to me known and known by me to be the party executing the forgoing instrument and acknowledging said instrument by him to be his free act and deed.
+
+	
+{{Order.Notary.Name}}
+Notary Public Number:  {{Order.Notary.CommissionNumber}}
+My Commission Expires:  {{Order.Notary.CommissionExpiresDate LD}}
+</TOGETHER>
+</IF>
+</IF>
+</FOREACH>
+
+
