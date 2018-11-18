@@ -1,7 +1,7 @@
 Begins with Coding
 <IF (BeginsWith({{Order.Number}}, "5"))>
-Title Security Agency of Arizona, LLC, an Arizona corporation
-<ELSE>Title Security Agency, LLC, a Delaware limited liability company</IF>
+Title Agency, LLC, a Kentucky corporation
+<ELSE>Title Agency, LLC, a Kentucky limited liability company</IF>
 
 FOREACH ASK NUMBER
 <FOREACH ASK NUMBER {{.RequirementException[{{.Type}}="Exception" and {{.ShowOnDocument}}=True]}}>
